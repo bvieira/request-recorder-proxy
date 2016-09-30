@@ -9,21 +9,21 @@ request-recorder-proxy -h
 ```
 
 # API:
-	- [Version](#version)
-	- [Requests](#requests)
-	- [Metadata](#metadata)
-	- [Body](#body)
+- [Version](#version)
+- [Requests](#requests)
+- [Metadata](#metadata)
+- [Body](#body)
 
-### Version
+## Version
 /version
 
-### Requests
+## Requests
 /requests?key=&uri=&method=
 
-### Metadata
+## Metadata
 /metadata/:id/:type
 
-### Body
+## Body
 /body/:id/:type
 
 
