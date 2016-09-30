@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -156,9 +157,29 @@ func body(repository Repository) echo.HandlerFunc {
 }
 
 func errorHandler(err error, c echo.Context) {
+	contentType := "application/vnd.rrp.error.v1+json"
 	switch err := err.(type) {
-
+	case *echo.HTTPError:
+		jsonResponse(c, err.Code, contentType, struct {
+			Code    string
+			Message string
+		}{Code: fmt.Sprintf("HTTP%v", err.Code), Message: err.Error()})
+	default:
+		jsonResponse(c, http.StatusInternalServerError, contentType, struct {
+			Code    string
+			Message string
+		}{Code: "RRP000", Message: err.Error()})
 	}
+}
+
+func jsonResponse(c echo.Context, code int, contentType string, i interface{}) error {
+	c.Response().Header().Set("Content-Type", contentType)
+	c.Response().WriteHeader(code)
+	result, _ := json.Marshal(i)
+	c.Set("response-body", result)
+	c.Response().Write([]byte(result))
+	return nil
+
 }
 
 func readBody(body io.ReadCloser) ([]byte, io.ReadCloser) {
