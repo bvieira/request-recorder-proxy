@@ -8,38 +8,56 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-var BASEKEY = "rrp::"
+// Repository repository
+type Repository interface {
+	Set(key string, content string)
+	Get(key string) (string, error)
 
-var redisPool = getPool()
+	GetHTTPContent(key string) (HttpContent, error)
+	SetHTTPContent(key string, content HttpContent) error
+}
 
-func GetHttpContent(key string) (HttpContent, error) {
-	if result, err := Get(key); err != nil {
+// redisRepository repository using redis as backend
+type redisRepository struct {
+	prefixKey string
+	pool      *redis.Pool
+}
+
+// NewRedisRepository redisRepository constructor
+func NewRedisRepository() Repository {
+	return &redisRepository{
+		prefixKey: "rrp::",
+		pool:      createPool(),
+	}
+}
+
+func (r *redisRepository) GetHTTPContent(key string) (HttpContent, error) {
+	result, err := r.Get(key)
+	if err != nil {
 		return HttpContent{}, err
-	} else {
-		var content HttpContent
-		err = json.Unmarshal([]byte(result), &content)
-		return content, err
 	}
+	var content HttpContent
+	return content, json.Unmarshal([]byte(result), &content)
 }
 
-func SetHttpContent(key string, content HttpContent) error {
-	if cacheJson, err := json.Marshal(content); err != nil {
+func (r *redisRepository) SetHTTPContent(key string, content HttpContent) error {
+	json, err := json.Marshal(content)
+	if err != nil {
 		return err
-	} else {
-		Set(key, string(cacheJson))
-		return nil
 	}
+	r.Set(key, string(json))
+	return nil
 }
 
-func Set(key string, content string) {
-	setKey(BASEKEY+key, content, 2*60*60)
+func (r *redisRepository) Set(key string, content string) {
+	setKey(r.pool, r.prefixKey+key, content, 2*60*60)
 }
 
-func Get(key string) (string, error) {
-	return getKey(BASEKEY + key)
+func (r *redisRepository) Get(key string) (string, error) {
+	return getKey(r.pool, r.prefixKey+key)
 }
 
-func getKey(key string) (string, error) {
+func getKey(redisPool *redis.Pool, key string) (string, error) {
 	c := redisPool.Get()
 	defer c.Close()
 
@@ -53,7 +71,7 @@ func getKey(key string) (string, error) {
 	return value, err
 }
 
-func setKey(key, value string, ttl int) error {
+func setKey(redisPool *redis.Pool, key, value string, ttl int) error {
 	c := redisPool.Get()
 	defer c.Close()
 
@@ -61,7 +79,7 @@ func setKey(key, value string, ttl int) error {
 	return err
 }
 
-func getPool() *redis.Pool {
+func createPool() *redis.Pool {
 	Info.Println("initializing redis...")
 
 	return &redis.Pool{

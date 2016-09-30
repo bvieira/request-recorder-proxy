@@ -28,6 +28,7 @@ func main() {
 	serverAddr := flag.String("server", "8081", "server listen address")
 	flag.Parse()
 
+	repository := NewRedisRepository()
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = *verbose
 
@@ -42,13 +43,13 @@ func main() {
 		uri := req.URL.Host + req.URL.Path
 		keyValue := req.Header.Get(*keyParam)
 		Info.Printf("saving request uri:[%s] key:[%s] id:[%s]", uri, keyValue, id)
-		Set(createMainCacheId(keyValue, uri, strings.ToUpper(req.Method)), id)
+		repository.Set(createMainCacheID(keyValue, uri, strings.ToUpper(req.Method)), id)
 		req.Header.Add(proxyHeader, id)
 
 		b, body := readBody(req.Body)
 		req.Body = body
 		content := HttpContent{ID: id, Timestamp: time.Now().UnixNano() / int64(time.Millisecond), URI: req.RequestURI, Method: req.Method, Body: b, Headers: toHeaders(req.Header)}
-		SetHttpContent("req-"+id, content)
+		repository.SetHTTPContent("req-"+id, content)
 		return req, nil
 	})
 
@@ -62,27 +63,27 @@ func main() {
 		id := resp.Request.Header.Get(proxyHeader)
 		Info.Printf("saving response id:[%s] code:[%v]", id, resp.StatusCode)
 		content := HttpContent{ID: id, Timestamp: time.Now().UnixNano() / int64(time.Millisecond), Code: resp.StatusCode, Body: b, Headers: toHeaders(resp.Header)}
-		SetHttpContent("resp-"+id, content)
+		repository.SetHTTPContent("resp-"+id, content)
 		return resp
 	})
 
-	go func(addr string) {
+	go func(addr string, repository Repository) {
 		e := echo.New()
 		e.SetHTTPErrorHandler(errorHandler)
 		e.Get("/version", version)
-		e.Get("/metadata/:type", metadata())
-		e.Get("/body/:type", body)
+		e.Get("/metadata/:type", metadata(repository))
+		e.Get("/body/:type", body(repository))
 		Info.Printf("listening server on %v", addr)
 		server := standard.New(fmt.Sprintf(":%v", addr))
 		server.SetHandler(e)
 		server.ListenAndServe()
-	}(*serverAddr)
+	}(*serverAddr, repository)
 
 	Info.Printf("listening proxy on %v", *proxyAddr)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", *proxyAddr), proxy))
 }
 
-func createMainCacheId(tid, uri, method string) string {
+func createMainCacheID(tid, uri, method string) string {
 	return "id-" + method + "-" + tid + "-" + uri
 }
 
@@ -90,7 +91,7 @@ func version(c echo.Context) error {
 	return c.String(http.StatusOK, "v1.0, "+runtime.Version())
 }
 
-func metadata() echo.HandlerFunc {
+func metadata(repository Repository) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		param := c.Param("type")
 		if "req" != param && "resp" != param {
@@ -103,11 +104,11 @@ func metadata() echo.HandlerFunc {
 
 		Info.Printf("[%s] get meta info for request type:[%s] method:[%s] key:[%s] uri:[%s]", c.Request().URL().Path(), param, method, key, uri)
 
-		id, err := Get(createMainCacheId(key, uri, method))
+		id, err := repository.Get(createMainCacheID(key, uri, method))
 		if err != nil {
 			return err
 		}
-		content, err := GetHttpContent(param + "-" + id)
+		content, err := repository.GetHTTPContent(param + "-" + id)
 		if err != nil {
 			return err
 		}
@@ -121,35 +122,37 @@ func supressBody(content HttpContent) HttpContent {
 	return content
 }
 
-func body(c echo.Context) error {
-	param := c.Param("type")
-	if "req" != param && "resp" != param {
-		return fmt.Errorf("type:[%v] not allowed", param)
-	}
+func body(repository Repository) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		param := c.Param("type")
+		if "req" != param && "resp" != param {
+			return fmt.Errorf("type:[%v] not allowed", param)
+		}
 
-	tid := c.QueryParam("id")
-	uri := c.QueryParam("uri")
-	method := strings.ToUpper(c.QueryParam("method"))
+		tid := c.QueryParam("id")
+		uri := c.QueryParam("uri")
+		method := strings.ToUpper(c.QueryParam("method"))
 
-	Info.Printf("[%s] get body for request type:[%s] method:[%s] tid:[%s] uri:[%s]", c.Request().URI(), param, method, tid, uri)
-	id, err := Get(createMainCacheId(tid, uri, method))
-	if err != nil {
-		return err
+		Info.Printf("[%s] get body for request type:[%s] method:[%s] tid:[%s] uri:[%s]", c.Request().URI(), param, method, tid, uri)
+		id, err := repository.Get(createMainCacheID(tid, uri, method))
+		if err != nil {
+			return err
+		}
+		content, err := repository.GetHTTPContent(param + "-" + id)
+		if err != nil {
+			return err
+		}
+		for k, v := range content.Headers {
+			c.Response().Header().Add(k, v)
+		}
+		if content.Code == 0 {
+			c.Response().WriteHeader(http.StatusOK)
+		} else {
+			c.Response().WriteHeader(content.Code)
+		}
+		c.Response().Write(content.Body)
+		return nil
 	}
-	content, err := GetHttpContent(param + "-" + id)
-	if err != nil {
-		return err
-	}
-	for k, v := range content.Headers {
-		c.Response().Header().Add(k, v)
-	}
-	if content.Code == 0 {
-		c.Response().WriteHeader(http.StatusOK)
-	} else {
-		c.Response().WriteHeader(content.Code)
-	}
-	c.Response().Write(content.Body)
-	return nil
 }
 
 func errorHandler(err error, c echo.Context) {
