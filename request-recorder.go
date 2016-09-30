@@ -23,7 +23,7 @@ var proxyHeader = "X-proxy-req-id"
 
 func main() {
 	verbose := flag.Bool("v", false, "should every proxy request be logged to stdout")
-	keyParam := flag.String("key", "X-tid", "which header attribute should be used as request id")
+	keyParam := flag.String("key", "X-tid", "which header attribute should be used as request key")
 	proxyAddr := flag.String("proxy", "8080", "proxy listen address")
 	serverAddr := flag.String("server", "8081", "server listen address")
 	flag.Parse()
