@@ -83,8 +83,8 @@ func main() {
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", *proxyAddr), proxy))
 }
 
-func createMainCacheID(tid, uri, method string) string {
-	return "id-" + method + "-" + tid + "-" + uri
+func createMainCacheID(key, uri, method string) string {
+	return "id-" + method + "-" + key + "-" + uri
 }
 
 func version(c echo.Context) error {
@@ -129,12 +129,12 @@ func body(repository Repository) echo.HandlerFunc {
 			return fmt.Errorf("type:[%v] not allowed", param)
 		}
 
-		tid := c.QueryParam("id")
+		key := c.QueryParam("key")
 		uri := c.QueryParam("uri")
 		method := strings.ToUpper(c.QueryParam("method"))
 
-		Info.Printf("[%s] get body for request type:[%s] method:[%s] tid:[%s] uri:[%s]", c.Request().URI(), param, method, tid, uri)
-		id, err := repository.Get(createMainCacheID(tid, uri, method))
+		Info.Printf("[%s] get body for request type:[%s] method:[%s] key:[%s] uri:[%s]", c.Request().URI(), param, method, key, uri)
+		id, err := repository.Get(createMainCacheID(key, uri, method))
 		if err != nil {
 			return err
 		}
