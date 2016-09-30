@@ -17,8 +17,8 @@ func GetHttpContent(key string) (HttpContent, error) {
 		return HttpContent{}, err
 	} else {
 		var content HttpContent
-		err2 := json.Unmarshal([]byte(result), &content)
-		return content, err2
+		err = json.Unmarshal([]byte(result), &content)
+		return content, err
 	}
 }
 
@@ -32,7 +32,7 @@ func SetHttpContent(key string, content HttpContent) error {
 }
 
 func Set(key string, content string) {
-	setKey(BASEKEY+key, content)
+	setKey(BASEKEY+key, content, 2*60*60)
 }
 
 func Get(key string) (string, error) {
@@ -53,13 +53,12 @@ func getKey(key string) (string, error) {
 	return value, err
 }
 
-func setKey(key string, value string) bool {
+func setKey(key, value string, ttl int) error {
 	c := redisPool.Get()
 	defer c.Close()
 
-	_, err := c.Do("SET", key, value)
-	_, err2 := c.Do("EXPIRE", key, 2*60*60)
-	return err != nil && err2 != nil
+	_, err := c.Do("SETEX", key, ttl, value)
+	return err
 }
 
 func getPool() *redis.Pool {
