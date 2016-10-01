@@ -126,7 +126,7 @@ Return what was sent and received on proxy for id
 | `:type`             | 'req' for request and 'resp' for response  |
 
 ### Response:
-- 'req'
+- req
 	```sh
 	$ curl -v "localhost:8081/body/1475276740074193887-4/req"
 	> GET /body/1475276740074193887-4/req HTTP/1.1
@@ -146,7 +146,7 @@ Return what was sent and received on proxy for id
 	<
 	```
 
-- 'resp'
+- resp
 	```sh
 	$ curl -v "localhost:8081/body/1475276740074193887-4/resp"
 	> GET /body/1475276740074193887-4/resp HTTP/1.1
@@ -172,25 +172,24 @@ Return what was sent and received on proxy for id
 
 # Schema
 ## Metadata Request
-```json
-{
-	"id": string,
-	"timestamp": integer,
-	"uri": string,
-	"method": string,
-	"headers": map[string]string
-}
-```
+
+	{
+		"id": string,
+		"timestamp": integer,
+		"uri": string,
+		"method": string,
+		"headers": map[string]string
+	}
 
 ## Metadata Response
-```json
-{
-	"id": string,
-	"timestamp": integer,
-	"headers": map[string]string,
-	"code": integer
-}
-```
+
+	{
+		"id": string,
+		"timestamp": integer,
+		"headers": map[string]string,
+		"code": integer
+	}
+
 
 # Example:
 
