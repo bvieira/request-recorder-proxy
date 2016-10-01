@@ -145,6 +145,7 @@ Return what was sent and received on proxy for id
 	< Content-Type: text/plain; charset=utf-8
 	<
 	```
+
 - 'resp'
 	```sh
 	$ curl -v "localhost:8081/body/1475276740074193887-4/resp"
@@ -166,7 +167,7 @@ Return what was sent and received on proxy for id
 	The document has moved
 	<A HREF="http://www.google.com.br/?gfe_rd=cr&amp;ei=xO_uV_-vBfPM8AeX-oG4Cg">here</A>.
 	</BODY></HTML>
-```
+	```
 
 
 # Schema
