@@ -1,0 +1,91 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "2UmMbNHc8FBr98mJFN1k8ISOIHk=",
+			"path": "github.com/garyburd/redigo/internal",
+			"revision": "836b6e58b3358112c8291565d01c35b8764070d7",
+			"revisionTime": "2015-12-19T23:20:44Z"
+		},
+		{
+			"checksumSHA1": "rD2qkFpmML4hNlIHQugTrrhgMtY=",
+			"path": "github.com/garyburd/redigo/redis",
+			"revision": "836b6e58b3358112c8291565d01c35b8764070d7",
+			"revisionTime": "2015-12-19T23:20:44Z"
+		},
+		{
+			"checksumSHA1": "AL0+xJoSnKO6VVLm9prJEGaEkHM=",
+			"path": "github.com/labstack/echo",
+			"revision": "4d8557c49142beef0b0a666ccea6b0a665919f08",
+			"revisionTime": "2016-07-14T16:35:56Z"
+		},
+		{
+			"checksumSHA1": "2Mz/839MjqrCexm8fj0QrpirGmg=",
+			"path": "github.com/labstack/echo/engine",
+			"revision": "4d8557c49142beef0b0a666ccea6b0a665919f08",
+			"revisionTime": "2016-07-14T16:35:56Z"
+		},
+		{
+			"checksumSHA1": "9GNtCBHgbOtEQYFBuBcoBzhWVCE=",
+			"path": "github.com/labstack/echo/engine/standard",
+			"revision": "4d8557c49142beef0b0a666ccea6b0a665919f08",
+			"revisionTime": "2016-07-14T16:35:56Z"
+		},
+		{
+			"checksumSHA1": "iDCjk9XfJyeiobpsw3E1UXXde/0=",
+			"path": "github.com/labstack/echo/log",
+			"revision": "4d8557c49142beef0b0a666ccea6b0a665919f08",
+			"revisionTime": "2016-07-14T16:35:56Z"
+		},
+		{
+			"checksumSHA1": "CPh1wcGiIzRIsj1DzMdcviqbjMk=",
+			"path": "github.com/labstack/gommon/color",
+			"revision": "722aa12d41c236ce78ff48eac1cafe0107ecdc9d",
+			"revisionTime": "2016-06-09T00:12:06Z"
+		},
+		{
+			"checksumSHA1": "DoRv9nHZpz0GSNmjN1U5k5KNkD0=",
+			"path": "github.com/labstack/gommon/log",
+			"revision": "722aa12d41c236ce78ff48eac1cafe0107ecdc9d",
+			"revisionTime": "2016-06-09T00:12:06Z"
+		},
+		{
+			"checksumSHA1": "6wAWOVRtaH7hX48hmw9o7noyy5Q=",
+			"path": "github.com/mattn/go-colorable",
+			"revision": "9056b7a9f2d1f2d96498d6d146acd1f9d5ed3d59",
+			"revisionTime": "2016-06-02T15:08:27Z"
+		},
+		{
+			"checksumSHA1": "NkbetqlpWBi3gP08JDneC+axTKw=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "56b76bdf51f7708750eac80fa38b952bb9f32639",
+			"revisionTime": "2015-12-11T00:06:21Z"
+		},
+		{
+			"checksumSHA1": "PQy6kV2rK5B3qtCRpANzgRQPnFs=",
+			"path": "github.com/valyala/fasttemplate",
+			"revision": "3b874956e03f1636d171bda64b130f9135f42cff",
+			"revisionTime": "2016-03-15T19:31:34Z"
+		},
+		{
+			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
+			"path": "golang.org/x/net/context",
+			"revision": "e90d6d0afc4c315a0d87a568ae68577cc15149a0",
+			"revisionTime": "2016-07-15T16:59:30Z"
+		},
+		{
+			"checksumSHA1": "8AFTr4r2thuqSUXpiYRFaGkDJio=",
+			"path": "gopkg.in/elazarl/goproxy.v1",
+			"revision": "0a5b8bdb09049ae4ae68e75437ded0b7a2e324e3",
+			"revisionTime": "2014-09-10T04:48:17Z"
+		},
+		{
+			"checksumSHA1": "UhjqIuJc5BVuNFGxtHtQUwrInVY=",
+			"path": "gopkg.in/elazarl/goproxy.v1/transport",
+			"revision": "0a5b8bdb09049ae4ae68e75437ded0b7a2e324e3",
+			"revisionTime": "2014-09-10T04:48:17Z"
+		}
+	],
+	"rootPath": "github.com/bvieira/request-recorder-proxy"
+}
