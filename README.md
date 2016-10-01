@@ -2,11 +2,19 @@ Request Recorder Proxy
 ======================
 tool using [go] to help automated tests validations for asynchronous services
 
+# Install
+```sh
+$ go get -u github.com/bvieira/request-recorder-proxy
+```
+
 # Flags:
 Use '-h' for flags usage
 ```sh
 request-recorder-proxy -h
 ```
+
+# Requirements
+- Redis
 
 # API:
 - [Version](#version)
