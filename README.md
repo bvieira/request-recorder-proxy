@@ -43,6 +43,7 @@ returns the list of ids for requests done with key, uri and method
 
 ### Request:
 `GET` /requests?key=&uri=&method=
+
 | query parameter   | description           |
 |-------------------|-----------------------|
 | `key`             | `key` header used on request  |
@@ -72,6 +73,7 @@ Return metadata info for :id and :type
 
 ### Request:
 `GET` /metadata/:id/:type
+
 | param   | description           |
 |-------------------|-----------------------|
 | `:id`             | `id` returned from /requests  |
@@ -117,6 +119,7 @@ Return what was sent and received on proxy for id
 
 ### Request:
 `GET` /body/:id/:type
+
 | param   | description           |
 |-------------------|-----------------------|
 | `:id`             | `id` returned from /requests  |
