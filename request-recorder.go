@@ -23,15 +23,17 @@ import (
 var proxyHeader = "X-proxy-req-id"
 
 func main() {
-	verbose := flag.Bool("v", false, "should every proxy request be logged to stdout")
+	proxyVerbose := flag.Bool("proxy-verbose", false, "should every proxy request be logged to stdout")
 	keyParam := flag.String("key", "X-tid", "which header attribute should be used as request key")
 	proxyAddr := flag.String("proxy", "8080", "proxy listen address")
 	serverAddr := flag.String("server", "8081", "server listen address")
+	redisAddr := flag.String("redis-addr", "localhost:6379", "redis address")
+	redisTTL := flag.Int("redis-ttl", 2*60*60, "redis key ttl in seconds")
 	flag.Parse()
 
-	repository := NewRedisRepository()
+	repository := NewRedisRepository(*redisAddr, *redisTTL)
 	proxy := goproxy.NewProxyHttpServer()
-	proxy.Verbose = *verbose
+	proxy.Verbose = *proxyVerbose
 
 	tr := transport.Transport{Proxy: transport.ProxyFromEnvironment}
 
@@ -44,7 +46,7 @@ func main() {
 		uri := req.URL.Host + req.URL.Path
 		keyValue := req.Header.Get(*keyParam)
 		Info.Printf("saving request uri:[%s] key:[%s] id:[%s]", uri, keyValue, id)
-		repository.Set(createMainCacheID(keyValue, uri, strings.ToUpper(req.Method)), id)
+		repository.Add(createRepositoryID(keyValue, uri, strings.ToUpper(req.Method)), id)
 		req.Header.Add(proxyHeader, id)
 
 		b, body := readBody(req.Body)
@@ -72,8 +74,9 @@ func main() {
 		e := echo.New()
 		e.SetHTTPErrorHandler(errorHandler)
 		e.Get("/version", version)
-		e.Get("/metadata/:type", metadata(repository))
-		e.Get("/body/:type", body(repository))
+		e.Get("/requests", requests(repository))
+		e.Get("/metadata/:id/:type", metadata(repository))
+		e.Get("/body/:id/:type", body(repository))
 		Info.Printf("listening server on %v", addr)
 		server := standard.New(fmt.Sprintf(":%v", addr))
 		server.SetHandler(e)
@@ -84,12 +87,30 @@ func main() {
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", *proxyAddr), proxy))
 }
 
-func createMainCacheID(key, uri, method string) string {
+func createRepositoryID(key, uri, method string) string {
 	return "id-" + method + "-" + key + "-" + uri
 }
 
 func version(c echo.Context) error {
 	return c.String(http.StatusOK, "v1.0, "+runtime.Version())
+}
+
+func requests(repository Repository) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		key := c.QueryParam("key")
+		uri := c.QueryParam("uri")
+		method := strings.ToUpper(c.QueryParam("method"))
+		if key == "" || uri == "" || method == "" {
+			return fmt.Errorf("'key', 'uri' or 'method' is empty")
+		}
+
+		Info.Printf("[%s] get requests for method:[%s] key:[%s] uri:[%s]", "requests", method, key, uri)
+		ids, err := repository.List(createRepositoryID(key, uri, method))
+		if err != nil {
+			return err
+		}
+		return c.JSON(http.StatusOK, ids)
+	}
 }
 
 func metadata(repository Repository) echo.HandlerFunc {
@@ -98,17 +119,12 @@ func metadata(repository Repository) echo.HandlerFunc {
 		if "req" != param && "resp" != param {
 			return fmt.Errorf("type:[%v] not allowed", param)
 		}
-
-		key := c.QueryParam("key")
-		uri := c.QueryParam("uri")
-		method := strings.ToUpper(c.QueryParam("method"))
-
-		Info.Printf("[%s] get meta info for request type:[%s] method:[%s] key:[%s] uri:[%s]", c.Request().URL().Path(), param, method, key, uri)
-
-		id, err := repository.Get(createMainCacheID(key, uri, method))
-		if err != nil {
-			return err
+		id := c.Param("id")
+		if id == "" {
+			return fmt.Errorf("empty id not allowed")
 		}
+
+		Info.Printf("[%s] get meta info for request id:[%s]", "metadata", id)
 		content, err := repository.GetHTTPContent(param + "-" + id)
 		if err != nil {
 			return err
@@ -129,16 +145,12 @@ func body(repository Repository) echo.HandlerFunc {
 		if "req" != param && "resp" != param {
 			return fmt.Errorf("type:[%v] not allowed", param)
 		}
-
-		key := c.QueryParam("key")
-		uri := c.QueryParam("uri")
-		method := strings.ToUpper(c.QueryParam("method"))
-
-		Info.Printf("[%s] get body for request type:[%s] method:[%s] key:[%s] uri:[%s]", c.Request().URI(), param, method, key, uri)
-		id, err := repository.Get(createMainCacheID(key, uri, method))
-		if err != nil {
-			return err
+		id := c.Param("id")
+		if id == "" {
+			return fmt.Errorf("empty id not allowed")
 		}
+
+		Info.Printf("[%s] get body for request id:[%s]", "body", id)
 		content, err := repository.GetHTTPContent(param + "-" + id)
 		if err != nil {
 			return err

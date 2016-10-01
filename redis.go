@@ -10,8 +10,8 @@ import (
 
 // Repository repository
 type Repository interface {
-	Set(key string, content string)
-	Get(key string) (string, error)
+	Add(key string, content string)
+	List(key string) ([]string, error)
 
 	GetHTTPContent(key string) (HttpContent, error)
 	SetHTTPContent(key string, content HttpContent) error
@@ -20,19 +20,21 @@ type Repository interface {
 // redisRepository repository using redis as backend
 type redisRepository struct {
 	prefixKey string
+	ttl       int
 	pool      *redis.Pool
 }
 
 // NewRedisRepository redisRepository constructor
-func NewRedisRepository() Repository {
+func NewRedisRepository(addr string, ttl int) Repository {
 	return &redisRepository{
 		prefixKey: "rrp::",
-		pool:      createPool(),
+		ttl:       ttl,
+		pool:      createPool(addr),
 	}
 }
 
 func (r *redisRepository) GetHTTPContent(key string) (HttpContent, error) {
-	result, err := r.Get(key)
+	result, err := get(r.pool, r.prefixKey+key)
 	if err != nil {
 		return HttpContent{}, err
 	}
@@ -45,19 +47,33 @@ func (r *redisRepository) SetHTTPContent(key string, content HttpContent) error 
 	if err != nil {
 		return err
 	}
-	r.Set(key, string(json))
+	set(r.pool, r.prefixKey+key, string(json), r.ttl)
 	return nil
 }
 
-func (r *redisRepository) Set(key string, content string) {
-	setKey(r.pool, r.prefixKey+key, content, 2*60*60)
+func (r *redisRepository) Add(key string, content string) {
+	rpush(r.pool, r.prefixKey+key, content, r.ttl)
 }
 
-func (r *redisRepository) Get(key string) (string, error) {
-	return getKey(r.pool, r.prefixKey+key)
+func (r *redisRepository) List(key string) ([]string, error) {
+	return lrange(r.pool, r.prefixKey+key)
 }
 
-func getKey(redisPool *redis.Pool, key string) (string, error) {
+func lrange(redisPool *redis.Pool, key string) ([]string, error) {
+	c := redisPool.Get()
+	defer c.Close()
+
+	values, err := redis.Strings(c.Do("LRANGE", key, 0, -1))
+	if err != nil {
+		return nil, err
+	}
+	if len(values) == 0 {
+		return nil, errors.New("empty key")
+	}
+	return values, err
+}
+
+func get(redisPool *redis.Pool, key string) (string, error) {
 	c := redisPool.Get()
 	defer c.Close()
 
@@ -66,12 +82,23 @@ func getKey(redisPool *redis.Pool, key string) (string, error) {
 		return "", err
 	}
 	if len(value) == 0 {
-		return "", errors.New("empty cache")
+		return "", errors.New("empty key")
 	}
 	return value, err
 }
 
-func setKey(redisPool *redis.Pool, key, value string, ttl int) error {
+func rpush(redisPool *redis.Pool, key, value string, ttl int) error {
+	c := redisPool.Get()
+	defer c.Close()
+
+	c.Send("MULTI")
+	c.Send("RPUSH", key, value)
+	c.Send("EXPIRE", key, ttl)
+	_, err := c.Do("EXEC")
+	return err
+}
+
+func set(redisPool *redis.Pool, key, value string, ttl int) error {
 	c := redisPool.Get()
 	defer c.Close()
 
@@ -79,14 +106,14 @@ func setKey(redisPool *redis.Pool, key, value string, ttl int) error {
 	return err
 }
 
-func createPool() *redis.Pool {
+func createPool(addr string) *redis.Pool {
 	Info.Println("initializing redis...")
 
 	return &redis.Pool{
 		MaxIdle:     10,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", "localhost:6379")
+			c, err := redis.Dial("tcp", addr)
 			if err != nil {
 				Error.Printf("err:[%v]\n", err)
 				return nil, err
